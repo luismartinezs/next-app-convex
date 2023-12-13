@@ -6,17 +6,28 @@ import { FormEvent, useState } from "react"
 import { FaRegTrashAlt } from "react-icons/fa"
 
 function AddTask() {
+  const { userId } = useAuth()
   const addTask = useMutation(api.tasks.add)
   const [newTask, setNewTask] = useState("")
   const [error, setError] = useState("")
+
   async function handleAddTask(event: FormEvent) {
     event.preventDefault()
+
+    if (!userId) {
+      return
+    }
+
     try {
-      await addTask({ task: newTask })
+      await addTask({ task: newTask, userId })
       setNewTask("")
     } catch (err) {
-      console.error(err)
-      setError(err.message)
+      if (err instanceof Error) {
+        console.error(err)
+        setError(err.message)
+      } else {
+        console.error(err)
+      }
     }
   }
 
@@ -35,7 +46,7 @@ function AddTask() {
       <button
         type="submit"
         className="text-right bg-blue-500 py-1 px-2 rounded w-fit hover:bg-blue-600 cursor-pointer"
-        disabled={!newTask}
+        disabled={!newTask || !userId}
       >
         Add
       </button>
@@ -44,8 +55,8 @@ function AddTask() {
 }
 
 function Content() {
-  const { isLoaded, userId, sessionId, getToken } = useAuth()
-  const tasks = useQuery(api.tasks.list) ?? []
+  const { isLoaded, userId, sessionId } = useAuth()
+  const tasks = useQuery(api.tasks.list, { userId: userId ?? "" }) ?? []
   const removeTask = useMutation(api.tasks.remove)
 
   if (!isLoaded) {
